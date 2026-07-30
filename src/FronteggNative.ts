@@ -17,15 +17,122 @@ const FronteggRN = NativeModules.FronteggRN
       }
     );
 
-export function getConstants() {
+export interface FronteggConstants {
+  baseUrl: string;
+  clientId: string;
+  applicationId?: string | null;
+  bundleId?: string | null;
+  /**
+   * iOS only: the `useAssetLinks` key from `Frontegg.plist`, when present
+   * (companion to frontegg-ios-swift#293 — the wrapper forwards the plist as-is,
+   * so the key reaches the native SDK once it supports it). `null`/`undefined`
+   * when the key is not set or on Android.
+   */
+  useAssetLinks?: boolean | null;
+  /** Android only: `FRONTEGG_USE_ASSETS_LINKS` from the host app's BuildConfig. */
+  useAssetsLinks?: boolean;
+  /** Android only: `FRONTEGG_USE_CHROME_CUSTOM_TABS` from the host app's BuildConfig. */
+  useChromeCustomTabs?: boolean;
+}
+
+export function getConstants(): FronteggConstants {
   return FronteggRN.getConstants();
 }
 
+/**
+ * Stable, cross-platform rejection codes for `login()` (issue #110).
+ *
+ * - `user_cancelled` — the user dismissed/cancelled the login flow.
+ * - `oauth_failed` — the OAuth/hosted-login exchange failed (bad code exchange,
+ *   invalid OAuth state, failed authentication, etc.).
+ * - `network` — a network-level failure was detected by the native SDK.
+ * - `unknown` — anything the wrapper cannot classify; inspect `nativeCode`.
+ *
+ * Mapping is conservative: only failures the native layer can positively
+ * identify get a specific code, everything else is `unknown` with the raw
+ * platform details preserved on `nativeCode` / `nativeMessage`.
+ */
+export type FronteggLoginErrorCode =
+  | 'user_cancelled'
+  | 'oauth_failed'
+  | 'network'
+  | 'unknown';
+
+/** The error `login()` rejects with (issue #110). */
+export interface FronteggLoginError extends Error {
+  code: FronteggLoginErrorCode;
+  message: string;
+  /** Convenience flag, equivalent to `code === 'user_cancelled'`. */
+  userCancelled: boolean;
+  /**
+   * Raw platform error code, preserved for debugging/telemetry:
+   * iOS — `FronteggError` failure reason (e.g. `"operationCanceled"`,
+   * `"couldNotExchangeToken"`); Android — the SDK exception class name
+   * (e.g. `"CanceledByUserException"`).
+   */
+  nativeCode?: string;
+  /** Raw platform error message. */
+  nativeMessage?: string;
+}
+
+const LOGIN_ERROR_CODES: ReadonlyArray<FronteggLoginErrorCode> = [
+  'user_cancelled',
+  'oauth_failed',
+  'network',
+  'unknown',
+];
+
+/**
+ * Normalizes a native `login()` rejection into a `FronteggLoginError`.
+ * The native bridges already reject with the stable codes above; this keeps
+ * the shape guaranteed even for older native layers or unexpected errors.
+ * Exported for testing.
+ */
+export function normalizeLoginError(e: unknown): FronteggLoginError {
+  const raw = (e ?? {}) as {
+    code?: unknown;
+    message?: unknown;
+    userInfo?: { nativeCode?: unknown; nativeMessage?: unknown };
+  };
+  const code: FronteggLoginErrorCode = LOGIN_ERROR_CODES.includes(
+    raw.code as FronteggLoginErrorCode
+  )
+    ? (raw.code as FronteggLoginErrorCode)
+    : 'unknown';
+  const message =
+    typeof raw.message === 'string' && raw.message.length > 0
+      ? raw.message
+      : 'Login failed';
+
+  const error = new Error(message) as FronteggLoginError;
+  error.name = 'FronteggLoginError';
+  error.code = code;
+  error.userCancelled = code === 'user_cancelled';
+  if (typeof raw.userInfo?.nativeCode === 'string') {
+    error.nativeCode = raw.userInfo.nativeCode;
+  } else if (typeof raw.code === 'string' && code === 'unknown') {
+    // Older native layers reject with the raw platform code directly.
+    error.nativeCode = raw.code;
+  }
+  if (typeof raw.userInfo?.nativeMessage === 'string') {
+    error.nativeMessage = raw.userInfo.nativeMessage;
+  }
+  return error;
+}
+
+/**
+ * Opens the Frontegg login flow. Resolves when login completes successfully;
+ * rejects with a {@link FronteggLoginError} when it fails or is cancelled.
+ */
 export async function login(loginHint?: string): Promise<void> {
   // FR-25938: previously fire-and-forget (swallowed the result in console.log), so callers could
   // neither await completion nor observe a cancelled/failed login. Return the promise so it is
   // awaitable and rejections propagate.
-  return FronteggRN.login(loginHint);
+  try {
+    return await FronteggRN.login(loginHint);
+  } catch (e) {
+    throw normalizeLoginError(e);
+  }
 }
 
 export function logout(): Promise<void> {

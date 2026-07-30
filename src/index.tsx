@@ -18,4 +18,9 @@ export {
   getFeatureEntitlement,
   getPermissionEntitlement,
 } from './FronteggNative';
-export type { Entitlement } from './FronteggNative';
+export type {
+  Entitlement,
+  FronteggConstants,
+  FronteggLoginError,
+  FronteggLoginErrorCode,
+} from './FronteggNative';

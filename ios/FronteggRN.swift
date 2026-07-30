@@ -18,8 +18,29 @@ class FronteggRN: RCTEventEmitter {
             "baseUrl": fronteggApp.baseUrl,
             "clientId": fronteggApp.clientId,
             "applicationId": fronteggApp.applicationId as Any,
-            "bundleId": Bundle.main.bundleIdentifier as Any
+            "bundleId": Bundle.main.bundleIdentifier as Any,
+            "useAssetLinks": Self.plistUseAssetLinks() as Any
         ]
+    }
+
+    /// `useAssetLinks` passthrough (companion to frontegg-ios-swift#293).
+    ///
+    /// iOS configuration is plist-driven: FronteggSwift decodes Frontegg.plist itself, so the
+    /// wrapper has no code path that hands config to native init — the plist *is* the passthrough.
+    /// Unknown keys are ignored by the SDK's Codable decode, so apps can set
+    /// `<key>useAssetLinks</key>` today as a safe no-op; once the pinned FronteggSwift supports
+    /// the key it takes effect with no wrapper change. This reads the same key from the same
+    /// plist so JS can introspect it via getConstants() (parity with Android's `useAssetsLinks`
+    /// BuildConfig constant). Returns nil when the plist or key is absent.
+    private static func plistUseAssetLinks() -> Bool? {
+        guard
+            let url = Bundle.main.url(forResource: "Frontegg", withExtension: "plist"),
+            let data = try? Data(contentsOf: url),
+            let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any]
+        else {
+            return nil
+        }
+        return plist["useAssetLinks"] as? Bool
     }
     override func startObserving() {
         self.hasListeners = true
@@ -168,10 +189,54 @@ class FronteggRN: RCTEventEmitter {
                 case .failure(let error):
                     // FR-25938: previously resolved "Failed: …", so a cancelled/failed login looked
                     // like success to JS. Reject so the awaited login() rejects.
-                    rejecter(error.failureReason, error.localizedDescription, error)
+                    //
+                    // Issue #110: the old reject code was `error.failureReason`, which is nil for
+                    // the outer FronteggError (only the inner Authentication enum implements it),
+                    // so JS always saw "EUNSPECIFIED". Reject with a stable cross-platform code
+                    // instead, preserving the raw native details in userInfo.
+                    let normalized = Self.normalizedLoginError(error)
+                    let nsError = NSError(
+                        domain: "FronteggRN",
+                        code: 0,
+                        userInfo: [
+                            NSLocalizedDescriptionKey: error.localizedDescription,
+                            "nativeCode": normalized.nativeCode,
+                            "nativeMessage": error.localizedDescription,
+                        ]
+                    )
+                    rejecter(normalized.code, error.localizedDescription, nsError)
                 }
             }
             fronteggApp.auth.login(completion, loginHint:loginHint)
+        }
+    }
+
+    /// Maps a FronteggError from login() onto the stable, cross-platform rejection codes
+    /// documented for the JS `login()` (issue #110). Keep in sync with
+    /// `FronteggLoginErrorCode` in src/FronteggNative.ts and the Android bridge.
+    /// Mapping is conservative: only positively identified failures get a specific
+    /// code; everything else is "unknown" with the raw reason kept in `nativeCode`.
+    private static func normalizedLoginError(_ error: FronteggError) -> (code: String, nativeCode: String) {
+        switch error {
+        case .networkError(let authError):
+            return ("network", authError.failureReason ?? "networkError")
+        case .configError:
+            return ("unknown", "configError")
+        case .authError(let authError):
+            let nativeCode = authError.failureReason ?? "unknown"
+            switch authError {
+            case .operationCanceled:
+                return ("user_cancelled", nativeCode)
+            case .oauthError,
+                 .invalidOAuthState,
+                 .failedToExtractCode,
+                 .codeVerifierNotFound,
+                 .couldNotExchangeToken,
+                 .failedToAuthenticate:
+                return ("oauth_failed", nativeCode)
+            default:
+                return ("unknown", nativeCode)
+            }
         }
     }
     
