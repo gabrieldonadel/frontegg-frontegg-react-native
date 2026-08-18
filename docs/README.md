@@ -1,15 +1,43 @@
-# Frontegg React Native SDK
-![Frontegg_React Native_SDK](/images/frontegg-react-native.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/frontegg/frontegg-react-native/master/images/frontegg-react-native.png" alt="Frontegg React Native SDK" width="640" />
+</p>
 
-Welcome to the official **Frontegg React Native SDK** — your all-in-one solution for
-integrating authentication and user management into your React Native mobile
-app. [Frontegg](https://frontegg.com/) is a self-served user management platform, built for modern
-SaaS applications. Easily implement authentication, SSO, RBAC, multi-tenancy, and more — all from a
-single SDK.
+<h1 align="center">Frontegg React Native SDK</h1>
 
-## 📦 Peer Dependencies
+<p align="center">
+  <strong>Authentication and user management for your React Native app — one package, both platforms.</strong>
+</p>
 
-Install the required peer dependencies in your app:
+<p align="center">
+  <a href="https://www.npmjs.com/package/@frontegg/react-native"><img src="https://img.shields.io/npm/v/@frontegg/react-native?label=npm&color=6c47ff" alt="npm version" /></a>
+  <img src="https://img.shields.io/badge/iOS-14%2B-lightgrey" alt="iOS 14+" />
+  <img src="https://img.shields.io/badge/Android-API%2026%2B-3ddc84" alt="Android API 26+" />
+  <img src="https://img.shields.io/badge/React%20Native-0.63%2B-61dafb" alt="React Native 0.63+" />
+  <a href="https://github.com/frontegg/frontegg-react-native/blob/master/LICENSE"><img src="https://img.shields.io/github/license/frontegg/frontegg-react-native?color=blue" alt="Licence" /></a>
+</p>
+
+---
+
+[Frontegg](https://frontegg.com/) is a self-served user management platform for modern SaaS
+applications. Drop this SDK in and your app gets a production login screen, a live session, and a
+user object — without you writing an auth flow or touching a token.
+
+| | |
+| --- | --- |
+| **Hosted or embedded login** | Frontegg's login box, or your own UI on top of the API |
+| **Every method your tenants need** | Email, social, SSO, magic link, passkeys, MFA and step-up |
+| **Sessions that stay alive** | Tokens refresh in the background, on both platforms |
+| **Built for multi-tenant SaaS** | Multi-tenancy, RBAC, entitlements and multi-region support |
+
+---
+
+## Install
+
+```sh
+npm install @frontegg/react-native
+```
+
+Then the peer dependencies:
 
 ```sh
 # Expo
@@ -19,51 +47,86 @@ npx expo install @react-native-async-storage/async-storage @react-navigation/nat
 npm install @react-native-async-storage/async-storage @react-navigation/native @react-navigation/native-stack react-native-screens react-native-safe-area-context
 ```
 
-## 📚 Documentation
+**Requirements:** React Native 0.63+ · iOS deployment target 14+ · Android API 26+ with JDK 17 and
+AGP 7.4+. Passkeys additionally need iOS 15+ and Chrome Custom Tabs on Android.
 
-This repository includes:
+## Quick start
 
-- A [Get Started](https://react-native-guide.frontegg.com/#/getting-started) guide for quick integration
-- A [Setup Guide](https://react-native-guide.frontegg.com/#/setup) with detailed setup instructions
-- [Usage Examples](https://react-native-guide.frontegg.com/#/usage) with common implementation patterns
-- [Advanced Topics](https://react-native-guide.frontegg.com/#/advanced) for complex integration scenarReact Native
-- A [Embedded](https://github.com/frontegg/frontegg-react-native/tree/master/example) example projects to help you get started quickly
+**1 · Allow the redirect URLs.** In the Frontegg Portal, under **[ENVIRONMENT] → Authentication →
+Login method**, turn hosted login on and add the shared URL plus one per platform:
 
-For full documentation, visit the Frontegg Developer Portal:
-🔗 [https://developers.frontegg.com](https://developers.frontegg.com)
+```
+{{FRONTEGG_BASE_URL}}/oauth/authorize
 
----
+# iOS
+{{IOS_BUNDLE_IDENTIFIER}}://{{FRONTEGG_BASE_URL}}/ios/oauth/callback
 
-## 🔐 Native SDK versions
+# Android
+{{ANDROID_PACKAGE_NAME}}://{{FRONTEGG_BASE_URL}}/android/oauth/callback
+https://{{FRONTEGG_BASE_URL}}/oauth/account/redirect/android/{{ANDROID_PACKAGE_NAME}}
+```
 
-The React Native wrapper depends on the underlying native SDKs:
+**2 · Configure the native projects.** iOS reads a `Frontegg.plist`; Android takes its domain and
+client ID from `build.gradle`. Both are covered step by step in the
+[Setup guide](https://react-native-guide.frontegg.com/#/setup) — this is the one part that is not
+JavaScript, and it differs per platform.
 
-- On **Android**, the plugin and example app use `com.frontegg.sdk:android:1.3.35`.
-- On **iOS**, the plugin depends on `FronteggSwift` **1.3.11** via CocoaPods.
+**3 · Wrap your app.**
 
-After upgrading, run `pod install` in your iOS project and rebuild both platforms.
+```tsx
+import { NavigationContainer } from '@react-navigation/native';
+import { FronteggWrapper } from '@frontegg/react-native';
 
----
+export default function App() {
+  return (
+    <FronteggWrapper>
+      <NavigationContainer>
+        {/* your navigator */}
+      </NavigationContainer>
+    </FronteggWrapper>
+  );
+}
+```
 
-## 🔐 Native SDK versions
+**4 · Read the authentication state** anywhere below it.
 
-The React Native wrapper depends on the underlying native SDKs:
+```tsx
+import { View, Button } from 'react-native';
+import { useAuth, login } from '@frontegg/react-native';
 
-- On **Android**, the plugin and example app use `com.frontegg.sdk:android:1.3.35`.
-- On **iOS**, the plugin depends on `FronteggSwift` **1.3.11** via CocoaPods.
+export function MyScreen() {
+  const { isAuthenticated } = useAuth();
 
-After upgrading, run `pod install` in your iOS project and rebuild both platforms.
+  return (
+    <View>
+      {isAuthenticated ? <Profile /> : <Button title="Login" onPress={login} />}
+    </View>
+  );
+}
+```
 
----
+## Documentation
 
-## 🧑‍💻 Getting Started with Frontegg
+| Guide | What it covers |
+| --- | --- |
+| [Get Started](https://react-native-guide.frontegg.com/#/getting-started) | Requirements, environment prep, installation |
+| [Setup](https://react-native-guide.frontegg.com/#/setup) | iOS and Android native configuration |
+| [Usage Examples](https://react-native-guide.frontegg.com/#/usage) | Hooks, login flows, error handling |
+| [Advanced Topics](https://react-native-guide.frontegg.com/#/advanced) | Complex integration scenarios |
 
-Don't have a Frontegg account yet?
-Sign up here → [https://portal.us.frontegg.com/signup](https://portal.us.frontegg.com/signup)
+Full platform documentation lives at [developers.frontegg.com](https://developers.frontegg.com).
 
----
+## Example app
 
-## 💬 Support
+A complete integration you can run:
+[example](https://github.com/frontegg/frontegg-react-native/tree/master/example).
 
-Need help? Our team is here for you:
-[https://support.frontegg.com/frontegg/directories](https://support.frontegg.com/frontegg/directories)
+## Support
+
+No Frontegg account yet? [Sign up free](https://portal.us.frontegg.com/signup).
+
+Questions, or something broken? Reach the team at
+[support.frontegg.com](https://support.frontegg.com/frontegg/directories) or
+[open an issue](https://github.com/frontegg/frontegg-react-native/issues).
+
+Licensed under the [LICENSE](https://github.com/frontegg/frontegg-react-native/blob/master/LICENSE) in this repository.
