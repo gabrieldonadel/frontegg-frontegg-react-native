@@ -4,9 +4,7 @@ Local, instrumented end-to-end tests for the React Native example app. These
 complement the external Nightwatch/Appium suite that lives in
 `frontegg/e2e-system-tests` and runs in CI; the tests in this directory exist
 so engineers can reproduce failures without the external repo and so that new
-coverage for gaps flagged in
-[`docs/E2E_REACT_NATIVE_TESTS_REVIEW.md`](../docs/E2E_REACT_NATIVE_TESTS_REVIEW.md)
-(passkeys, refresh token) has a home.
+coverage for previously identified gaps (passkeys, refresh token) has a home.
 
 The test suites mirror the patterns used by the sibling native SDKs:
 
@@ -41,8 +39,7 @@ Test IDs on `HomeScreen.tsx` (`loginButton`, `logoutButton`,
 `loginWithGoogleButton`, `requestAuthorizeButton`, `refreshTokenButton`,
 `registerPasskeysButton`, `loginWithPasskeysButton`,
 `tenantSwitchButton-$tenantId`, `accessTokenValue`, `userEmailValue`) are
-shared between the two suites for selector stability — matching the
-recommendation in `E2E_REACT_NATIVE_TESTS_REVIEW.md §5.3`.
+shared between the two suites for selector stability.
 
 ---
 

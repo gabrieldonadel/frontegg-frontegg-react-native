@@ -12,8 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * New coverage for passkey registration — gap flagged in
- * docs/E2E_REACT_NATIVE_TESTS_REVIEW.md §4. Because passkey enrollment
+ * New coverage for passkey registration. Because passkey enrollment
  * requires a device biometric prompt that cannot be driven by UiAutomator on
  * a plain emulator, this test only verifies the button is reachable and the
  * app stays authenticated. A full enrollment assertion will land once the

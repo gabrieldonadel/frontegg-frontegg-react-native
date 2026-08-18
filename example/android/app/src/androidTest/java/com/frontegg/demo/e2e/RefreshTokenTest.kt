@@ -13,8 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * New coverage — the Refresh Token button was flagged as untested in
- * docs/E2E_REACT_NATIVE_TESTS_REVIEW.md §5.4. Verifies that tapping
+ * New coverage for the previously untested Refresh Token button. Verifies that tapping
  * "Refresh Token" produces a new access-token suffix without signing the user
  * out.
  */
