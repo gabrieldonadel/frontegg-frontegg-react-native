@@ -112,6 +112,7 @@ export function MyScreen() {
 | [Get Started](https://react-native-guide.frontegg.com/#/getting-started) | Requirements, environment prep, installation |
 | [Setup](https://react-native-guide.frontegg.com/#/setup) | iOS and Android native configuration |
 | [Usage Examples](https://react-native-guide.frontegg.com/#/usage) | Hooks, login flows, error handling |
+| [API Reference](https://react-native-guide.frontegg.com/#/api) | Every method, hook and type the SDK exports |
 | [Advanced Topics](https://react-native-guide.frontegg.com/#/advanced) | Complex integration scenarios |
 
 Full platform documentation lives at [developers.frontegg.com](https://developers.frontegg.com).
