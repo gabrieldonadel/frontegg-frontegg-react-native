@@ -9,8 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * New coverage for passkey login — gap flagged in
- * docs/E2E_REACT_NATIVE_TESTS_REVIEW.md §4. Verifies the button is reachable
+ * New coverage for passkey login. Verifies the button is reachable
  * on the unauthenticated HomeScreen and does not crash the app. Full
  * verification of the credential-manager sheet requires a passkey-provisioned
  * emulator and is tracked separately.
